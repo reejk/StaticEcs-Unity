@@ -179,7 +179,8 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         }
         #endif
 
-        public static void DrawEntity(StaticEcsEntityProvider provider, bool viewer, Action<StaticEcsEntityProvider> onClickBuild) {
+        public static void DrawEntity(StaticEcsEntityProvider provider, bool viewer, Action<StaticEcsEntityProvider> onClickBuild)
+        {
             provider.Scroll = EditorGUILayout.BeginScrollView(provider.Scroll, Ui.MaxWidth600);
             EditorGUILayout.Space(10);
 
@@ -203,7 +204,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                 EditorGUILayout.EndScrollView();
                 return;
             }
-
+            
             EditorGUILayout.BeginHorizontal(Ui.MaxWidth600);
             {
                 if (GUILayout.Button(Ui.IconMenu, Ui.WidthLine(20))) {
@@ -240,7 +241,14 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
             Ui.DrawHorizontalSeparator(Ui.MaxWidth600);
+            
+            DrawEntity(provider, viewer);
+            EditorGUILayout.EndScrollView();
+        }
 
+        public static void DrawEntity<TProvider>(TProvider provider, bool viewer) 
+            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
+        {
             if (!provider.EntityIsActual() && !provider.HasComponents()) {
                 EditorGUILayout.HelpBox("Please, provide at least one component", MessageType.Warning, true);
             }
@@ -264,8 +272,6 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             DrawMasks(_masksCache, provider, Ui.MaxWidth600);
             _masksCache.Clear();
             #endif
-
-            EditorGUILayout.EndScrollView();
         }
 
         private static void DrawWorldMenu(AbstractStaticEcsProvider provider) {
@@ -290,7 +296,9 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             menu.ShowAsContext();
         }
 
-        private static void DrawComponents(List<IComponent> components, StaticEcsEntityProvider provider, GUILayoutOption[] maxWidth) {
+        private static void DrawComponents<TProvider>(List<IComponent> components, TProvider provider, GUILayoutOption[] maxWidth)
+            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
+        {
             EditorGUILayout.BeginHorizontal();
             {
                 var hasAll = MetaData.Components.Count == components.Count;
@@ -342,7 +350,9 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             }
         }
 
-        private static void DrawComponentsMenu(List<IComponent> actualComponents, StaticEcsEntityProvider provider) {
+        private static void DrawComponentsMenu<TProvider>(List<IComponent> actualComponents, TProvider provider)
+            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
+        {
             var menu = new GenericMenu();
             foreach (var component in MetaData.Components) {
                 var has = false;
@@ -372,7 +382,9 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         }
         
         #if !FFS_ECS_DISABLE_TAGS
-        private static void DrawTags(List<ITag> tags, StaticEcsEntityProvider provider, GUILayoutOption[] maxWidth) {
+        private static void DrawTags<TProvider>(List<ITag> tags, TProvider provider, GUILayoutOption[] maxWidth) 
+            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
+        {
             EditorGUILayout.BeginHorizontal();
             {
                 var hasAll = MetaData.Tags.Count == tags.Count;
@@ -399,7 +411,9 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             }
         }
 
-        private static void DrawTagsMenu(List<ITag> actualTags, StaticEcsEntityProvider provider) {
+        private static void DrawTagsMenu<TProvider>(List<ITag> actualTags, TProvider provider) 
+            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
+        {
             var menu = new GenericMenu();
             foreach (var tag in MetaData.Tags) {
                 var has = false;
@@ -429,7 +443,9 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         #endif
 
         #if !FFS_ECS_DISABLE_MASKS
-        private static void DrawMasks(List<IMask> masks, StaticEcsEntityProvider provider, GUILayoutOption[] maxWidth) {
+        private static void DrawMasks<TProvider>(List<IMask> masks, TProvider provider, GUILayoutOption[] maxWidth) 
+            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
+        {
             EditorGUILayout.BeginHorizontal();
             {
                 var hasAll = MetaData.Masks.Count == masks.Count;
@@ -456,7 +472,9 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             }
         }
         
-        private static void DrawMasksMenu(List<IMask> actualMasks, StaticEcsEntityProvider provider) {
+        private static void DrawMasksMenu<TProvider>(List<IMask> actualMasks, TProvider provider)
+            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
+        {
             var menu = new GenericMenu();
             foreach (var mask in MetaData.Masks) {
                 var has = false;

@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace FFS.Libraries.StaticEcs.Unity {
 
-    public partial class StaticEcsEntityProvider {
+    public partial class StaticEcsEntityProvider : IStaticEcsEntityProvider {
         public bool HasComponents() {
             return components.Count > 0;
         }
