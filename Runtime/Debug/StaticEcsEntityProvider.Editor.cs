@@ -50,7 +50,7 @@ namespace FFS.Libraries.StaticEcs.Unity {
             if (EntityIsActual()) {
                 Entity.DeleteTag(tagType);
             } else {
-                tags.RemoveAll(tag => tag.GetType() == tagType);
+                tags.RemoveAll(tag => tag?.GetType() == tagType);
             }
         }
         #endif
@@ -87,7 +87,7 @@ namespace FFS.Libraries.StaticEcs.Unity {
             if (EntityIsActual()) {
                 Entity.DeleteMask(maskType);
             } else {
-                masks.RemoveAll(mask => mask.GetType() == maskType);
+                masks.RemoveAll(mask => mask?.GetType() == maskType);
             }
         }
         #endif
@@ -137,7 +137,7 @@ namespace FFS.Libraries.StaticEcs.Unity {
             if (EntityIsActual()) {
                 Entity.Delete(componentType);
             } else {
-                components.RemoveAll(component => component.GetType() == componentType);
+                components.RemoveAll(component => component?.GetType() == componentType);
             }
         }
 

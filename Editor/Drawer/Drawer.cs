@@ -312,7 +312,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
 
             for (int i = 0, iMax = components.Count; i < iMax; i++) {
                 var component = components[i];
-                var type = component.GetType();
+                var type = component?.GetType() ?? typeof(Unsupported);
                 var typeName = type.EditorTypeName();
 
                 GUILayout.BeginHorizontal(GUI.skin.box, maxWidth);
@@ -341,7 +341,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     GUILayout.EndVertical();
 
                     if (GUILayout.Button(Ui.IconTrash, Ui.WidthLine(30))) {
-                        provider.OnDeleteComponent(type);
+                        provider.OnDeleteComponent(component?.GetType());
                         EditorUtility.SetDirty(provider);
                     }
                 }
@@ -397,10 +397,10 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             EditorGUILayout.EndHorizontal();
 
             for (int i = 0, iMax = tags.Count; i < iMax; i++) {
-                var type = tags[i].GetType();
+                var type = tags[i]?.GetType();
                 EditorGUILayout.BeginHorizontal(GUI.skin.box, maxWidth);
                 {
-                    EditorGUILayout.SelectableLabel(type.EditorTypeName(), EditorStyles.boldLabel, Ui.MaxWidth600SingleLine);
+                    EditorGUILayout.SelectableLabel(type?.EditorTypeName() ?? "<null>", EditorStyles.boldLabel, Ui.MaxWidth600SingleLine);
                     if (GUILayout.Button(Ui.IconTrash, Ui.WidthLine(30))) {
                         provider.OnDeleteTag(type);
                         EditorUtility.SetDirty(provider);
@@ -458,10 +458,10 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             EditorGUILayout.EndHorizontal();
 
             for (int i = 0, iMax = masks.Count; i < iMax; i++) {
-                var type = masks[i].GetType();
+                var type = masks[i]?.GetType();
                 EditorGUILayout.BeginHorizontal(GUI.skin.box, maxWidth);
                 {
-                    EditorGUILayout.SelectableLabel(type.EditorTypeName(), EditorStyles.boldLabel, Ui.MaxWidth600SingleLine);
+                    EditorGUILayout.SelectableLabel(type?.EditorTypeName() ?? "<null>", EditorStyles.boldLabel, Ui.MaxWidth600SingleLine);
                     if (GUILayout.Button(Ui.IconTrash, Ui.WidthLine(30))) {
                         provider.OnDeleteMask(type);
                         EditorUtility.SetDirty(provider);
