@@ -28,12 +28,13 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
     }
 
     public class StatsDrawer {
-        private readonly IRawPool[] componentPools;
+        private readonly IStandardRawPool[] standardComponentPools;
+        private readonly IStandardRawPool[] componentPools;
         #if !FFS_ECS_DISABLE_TAGS
-        private readonly IRawPool[] tagPools;
+        private readonly IStandardRawPool[] tagPools;
         #endif
         #if !FFS_ECS_DISABLE_MASKS
-        private readonly IRawPool[] maskPools;
+        private readonly IStandardRawPool[] maskPools;
         #endif
         #if !FFS_ECS_DISABLE_EVENTS
         private readonly IEventPoolWrapper[] eventPools;
@@ -48,7 +49,14 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         public StatsDrawer(AbstractWorldData worldData) {
             _worldData = worldData;
             _world = _worldData.World;
-            componentPools = new IRawPool[MetaData.Components.Count];
+            standardComponentPools = new IStandardRawPool[MetaData.StandardComponents.Count];
+            for (var i = 0; i < MetaData.StandardComponents.Count; i++) {
+                if (_world.TryGetStandardComponentsRawPool(MetaData.StandardComponents[i].Type, out var pool)) {
+                    standardComponentPools[i] = pool;
+                }
+            }
+            
+            componentPools = new IStandardRawPool[MetaData.Components.Count];
             for (var i = 0; i < MetaData.Components.Count; i++) {
                 if (_world.TryGetComponentsRawPool(MetaData.Components[i].Type, out var pool)) {
                     componentPools[i] = pool;
@@ -56,7 +64,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             }
 
             #if !FFS_ECS_DISABLE_TAGS
-            tagPools = new IRawPool[MetaData.Tags.Count];
+            tagPools = new IStandardRawPool[MetaData.Tags.Count];
             for (var i = 0; i < MetaData.Tags.Count; i++) {
                 if (_world.TryGetTagsRawPool(MetaData.Tags[i].Type, out var pool)) {
                     tagPools[i] = pool;
@@ -65,7 +73,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             #endif
 
             #if !FFS_ECS_DISABLE_MASKS
-            maskPools = new IRawPool[MetaData.Masks.Count];
+            maskPools = new IStandardRawPool[MetaData.Masks.Count];
             for (var i = 0; i < MetaData.Masks.Count; i++) {
                 if (_world.TryGetMasksRawPool(MetaData.Masks[i].Type, out var pool)) {
                     maskPools[i] = pool;
@@ -98,12 +106,13 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
 
             verticalScrollStatsPosition = EditorGUILayout.BeginScrollView(verticalScrollStatsPosition);
 
-            DrawComponentPoolsStats("Components:", MetaData.Components, componentPools);
+            DrawComponentPoolsStats("Standard components:", MetaData.StandardComponents, standardComponentPools, true);
+            DrawComponentPoolsStats("Components:", MetaData.Components, componentPools, true);
             #if !FFS_ECS_DISABLE_TAGS
-            DrawComponentPoolsStats("Tags:", MetaData.Tags, tagPools);
+            DrawComponentPoolsStats("Tags:", MetaData.Tags, tagPools, true);
             #endif
             #if !FFS_ECS_DISABLE_MASKS
-            DrawComponentPoolsStats("Masks:", MetaData.Masks, maskPools);
+            DrawComponentPoolsStats("Masks:", MetaData.Masks, maskPools, false);
             #endif
             #if !FFS_ECS_DISABLE_EVENTS
             DrawEventsPoolsStats();
@@ -144,7 +153,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             EditorGUILayout.Space(10);
         }
 
-        private void DrawComponentPoolsStats(string type, List<EditorEntityDataMeta> indexes, IRawPool[] pools) {
+        private void DrawComponentPoolsStats(string type, List<EditorEntityDataMeta> indexes, IStandardRawPool[] pools, bool withCapacity) {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.SelectableLabel(type, Ui.LabelStyleWhiteCenter, Ui.WidthLine(200));
             Ui.DrawSeparator();
@@ -164,10 +173,10 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     Ui.DrawSeparator();
                     EditorGUILayout.LabelField(pool.Count().ToString(), Ui.LabelStyleWhiteCenter, Ui.WidthLine(90));
                     Ui.DrawSeparator();
-                    if (pool.Capacity() < 0) {
-                        EditorGUILayout.LabelField("N/A", Ui.LabelStyleGreyCenter, Ui.WidthLine(90));
-                    } else {
+                    if (withCapacity) {
                         EditorGUILayout.LabelField(pool.Capacity().ToString(), Ui.LabelStyleWhiteCenter, Ui.WidthLine(90));
+                    } else {
+                        EditorGUILayout.LabelField("N/A", Ui.LabelStyleGreyCenter, Ui.WidthLine(90));
                     }
 
                     Ui.DrawSeparator();

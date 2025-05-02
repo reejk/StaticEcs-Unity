@@ -6,17 +6,6 @@ using UnityEngine;
 namespace FFS.Libraries.StaticEcs.Unity {
 
     public partial class StaticEcsEntityProvider : IStaticEcsEntityProvider {
-        public bool HasComponents() {
-            return components.Count > 0;
-        }
-
-        public void Components(List<IComponent> result) {
-            if (EntityIsActual()) {
-                Entity.GetAllComponents(result);
-            } else {
-                result.AddRange(components);
-            }
-        }
 
         #if !FFS_ECS_DISABLE_TAGS
         public void Tags(List<ITag> result) {
@@ -52,6 +41,10 @@ namespace FFS.Libraries.StaticEcs.Unity {
             } else {
                 tags.RemoveAll(tag => tag?.GetType() == tagType);
             }
+        }
+        
+        public void DeleteAllBrokenTags() {
+            tags.RemoveAll(val => val == null);
         }
         #endif
 
@@ -90,10 +83,108 @@ namespace FFS.Libraries.StaticEcs.Unity {
                 masks.RemoveAll(mask => mask?.GetType() == maskType);
             }
         }
+
+        public void DeleteAllBrokenMasks() {
+            masks.RemoveAll(val => val == null);
+        }
         #endif
         
         public bool EntityIsActual() {
             return Entity != null && Entity.Version() == PackedEntity._version && Entity.IsActual();
+        }
+        
+        public bool HasStandardComponents() {
+            if (EntityIsActual()) {
+                return Entity.StandardComponentsCount() > 0;
+            }
+
+            return standardComponents.Count > 0;
+        }
+        
+        public void StandardComponents(List<IStandardComponent> result) {
+            if (EntityIsActual()) {
+                Entity.GetAllStandardComponents(result);
+            } else {
+                result.AddRange(standardComponents);
+            }
+        }
+        
+        public bool ShouldShowStandardComponent(Type componentType, bool runtime) {
+            if (!EntityIsActual() && !runtime) return true;
+            return World.TryGetStandardComponentsRawPool(componentType, out var _);
+        }
+        
+        public virtual void OnChangeStandardComponent(IStandardComponent component, Type componentType) {
+            if (EntityIsActual()) {
+                Entity.SetRawStandard(component);
+            } else {
+                for (var i = 0; i < standardComponents.Count; i++) {
+                    var val = standardComponents[i];
+                    if (val.GetType() == componentType) {
+                        standardComponents[i] = component;
+                        return;
+                    }
+                }
+                standardComponents.Add(component);
+            }
+        }
+        
+        public virtual void OnSelectStandardComponent(IStandardComponent component) {
+            if (EntityIsActual()) {
+                Entity.SetRawStandard(component);
+            } else {
+                for (var i = 0; i < standardComponents.Count; i++) {
+                    var val = standardComponents[i];
+                    if (val.GetType() == component.GetType()) {
+                        standardComponents[i] = component;
+                        return;
+                    }
+                }
+                standardComponents.Add(component);
+            }
+        }
+        
+        public virtual void OnDeleteStandardComponent(Type componentType) {
+            if (!EntityIsActual()) {
+                standardComponents.RemoveAll(component => component.GetType() == componentType);
+            }
+        }
+
+        public void DeleteAllBrokenStandardComponents() {
+            standardComponents.RemoveAll(val => val == null);
+        }
+
+        public bool HasComponents() {
+            return components.Count > 0;
+        }
+
+        public bool IsDisabled(Type componentType) {
+            if (!EntityIsActual()) return false;
+            return World.TryGetComponentsRawPool(componentType, out var pool) && pool.HasDisabled(Entity.GetId());
+        }
+
+        public void Disable(Type componentType) {
+            if (!EntityIsActual()) return;
+
+            if (World.TryGetComponentsRawPool(componentType, out var pool)) {
+                pool.Disable(Entity.GetId());
+            }
+        }
+
+        public void Enable(Type componentType) {
+            if (!EntityIsActual()) return;
+
+            if (World.TryGetComponentsRawPool(componentType, out var pool)) {
+                pool.Enable(Entity.GetId());
+            }
+        }
+
+        public void Components(List<IComponent> result) {
+            if (EntityIsActual()) {
+                Entity.GetAllComponents(result);
+            } else {
+                result.AddRange(components);
+            }
         }
 
         public bool ShouldShowComponent(Type componentType, bool runtime) {
@@ -131,14 +222,16 @@ namespace FFS.Libraries.StaticEcs.Unity {
             }
         }
 
-
-
         public virtual void OnDeleteComponent(Type componentType) {
             if (EntityIsActual()) {
                 Entity.Delete(componentType);
             } else {
                 components.RemoveAll(component => component?.GetType() == componentType);
             }
+        }
+
+        public void DeleteAllBrokenComponents() {
+            components.RemoveAll(val => val == null);
         }
 
         public void Clear() {

@@ -12,8 +12,13 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         private bool _filterActive;
 
         private readonly List<EditorEntityDataMetaByWorld> _all = new();
+        private readonly List<EditorEntityDataMetaByWorld> _allOnlyDisabled = new();
+        private readonly List<EditorEntityDataMetaByWorld> _allWithDisabled = new();
         private readonly List<EditorEntityDataMetaByWorld> _none = new();
+        private readonly List<EditorEntityDataMetaByWorld> _noneWithDisabled = new();
         private readonly List<EditorEntityDataMetaByWorld> _any = new();
+        private readonly List<EditorEntityDataMetaByWorld> _anyOnlyDisabled = new();
+        private readonly List<EditorEntityDataMetaByWorld> _anyWithDisabled = new();
         private readonly List<EditorEntityDataMetaByWorld> _tagAll = new();
         private readonly List<EditorEntityDataMetaByWorld> _tagNone = new();
         private readonly List<EditorEntityDataMetaByWorld> _tagAny = new();
@@ -47,8 +52,28 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
                         DrawShowFilterMenu(_components, _all);
                     }
-                    EditorGUILayout.LabelField("All:", Ui.WidthLine(90));
+                    EditorGUILayout.LabelField("All:", Ui.WidthLine(120));
                     DrawFilterLabels(_all);
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                EditorGUILayout.BeginHorizontal();
+                {
+                    if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
+                        DrawShowFilterMenu(_components, _allOnlyDisabled);
+                    }
+                    EditorGUILayout.LabelField("All only disabled:", Ui.WidthLine(120));
+                    DrawFilterLabels(_allOnlyDisabled);
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                EditorGUILayout.BeginHorizontal();
+                {
+                    if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
+                        DrawShowFilterMenu(_components, _allWithDisabled);
+                    }
+                    EditorGUILayout.LabelField("All with disabled:", Ui.WidthLine(120));
+                    DrawFilterLabels(_allWithDisabled);
                 }
                 EditorGUILayout.EndHorizontal();
 
@@ -57,8 +82,18 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
                         DrawShowFilterMenu(_components, _none);
                     }
-                    EditorGUILayout.LabelField("None:", Ui.WidthLine(90));
+                    EditorGUILayout.LabelField("None:", Ui.WidthLine(120));
                     DrawFilterLabels(_none);
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                EditorGUILayout.BeginHorizontal();
+                {
+                    if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
+                        DrawShowFilterMenu(_components, _noneWithDisabled);
+                    }
+                    EditorGUILayout.LabelField("None with disabled:", Ui.WidthLine(120));
+                    DrawFilterLabels(_noneWithDisabled);
                 }
                 EditorGUILayout.EndHorizontal();
 
@@ -67,8 +102,28 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
                         DrawShowFilterMenu(_components, _any);
                     }
-                    EditorGUILayout.LabelField("Any:", Ui.WidthLine(90));
+                    EditorGUILayout.LabelField("Any:", Ui.WidthLine(120));
                     DrawFilterLabels(_any);
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                EditorGUILayout.BeginHorizontal();
+                {
+                    if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
+                        DrawShowFilterMenu(_components, _anyOnlyDisabled);
+                    }
+                    EditorGUILayout.LabelField("Any only disabled:", Ui.WidthLine(120));
+                    DrawFilterLabels(_anyOnlyDisabled);
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                EditorGUILayout.BeginHorizontal();
+                {
+                    if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
+                        DrawShowFilterMenu(_components, _anyWithDisabled);
+                    }
+                    EditorGUILayout.LabelField("Any with disabled:", Ui.WidthLine(120));
+                    DrawFilterLabels(_anyWithDisabled);
                 }
                 EditorGUILayout.EndHorizontal();
                 
@@ -78,7 +133,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
                         DrawShowFilterMenu(_tags, _tagAll);
                     }
-                    EditorGUILayout.LabelField("Tag all:", Ui.WidthLine(90));
+                    EditorGUILayout.LabelField("Tag all:", Ui.WidthLine(120));
                     DrawFilterLabels(_tagAll);
                 }
                 EditorGUILayout.EndHorizontal();
@@ -88,7 +143,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
                         DrawShowFilterMenu(_tags, _tagNone);
                     }
-                    EditorGUILayout.LabelField("Tag none:", Ui.WidthLine(90));
+                    EditorGUILayout.LabelField("Tag none:", Ui.WidthLine(120));
                     DrawFilterLabels(_tagNone);
                 }
                 EditorGUILayout.EndHorizontal();
@@ -98,7 +153,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
                         DrawShowFilterMenu(_tags, _tagAny);
                     }
-                    EditorGUILayout.LabelField("Tag any:", Ui.WidthLine(90));
+                    EditorGUILayout.LabelField("Tag any:", Ui.WidthLine(120));
                     DrawFilterLabels(_tagAny);
                 }
                 EditorGUILayout.EndHorizontal();
@@ -110,7 +165,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
                         DrawShowFilterMenu(_masks, _maskAll);
                     }
-                    EditorGUILayout.LabelField("Mask all:", Ui.WidthLine(90));
+                    EditorGUILayout.LabelField("Mask all:", Ui.WidthLine(120));
                     DrawFilterLabels(_maskAll);
                 }
                 EditorGUILayout.EndHorizontal();
@@ -120,7 +175,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
                         DrawShowFilterMenu(_masks, _maskNone);
                     }
-                    EditorGUILayout.LabelField("Mask none:", Ui.WidthLine(90));
+                    EditorGUILayout.LabelField("Mask none:", Ui.WidthLine(120));
                     DrawFilterLabels(_maskNone);
                 }
                 EditorGUILayout.EndHorizontal();
@@ -130,7 +185,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     if (GUILayout.Button("+", Ui.ButtonStyleWhite, Ui.WidthLine(20))) {
                         DrawShowFilterMenu(_masks, _maskAny);
                     }
-                    EditorGUILayout.LabelField("Mask any:", Ui.WidthLine(90));
+                    EditorGUILayout.LabelField("Mask any:", Ui.WidthLine(120));
                     DrawFilterLabels(_maskAny);
                 }
                 EditorGUILayout.EndHorizontal();
@@ -156,7 +211,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         }
 
         private bool IsFilterValid() {
-            return _filterActive && (_all.Count > 0 || _tagAll.Count > 0);
+            return _filterActive && (_all.Count > 0 || _tagAll.Count > 0 || _allWithDisabled.Count > 0 || _allOnlyDisabled.Count > 0);
         }
 
         private void ColumnsFilter() {
@@ -186,6 +241,12 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
 
                 if (GUILayout.Button("+", incAll ? Ui.ButtonStyleGrey : Ui.ButtonStyleWhite, Ui.WidthLine(60))) {
                     var menu = new GenericMenu();
+                    foreach (var idx in _standardComponents) {
+                        if (!_standardComponentsColumns.Contains(idx)) {
+                            menu.AddItem(new GUIContent(idx.FullName), false, objType => _standardComponentsColumns.Add((EditorEntityDataMetaByWorld) objType), idx);
+                        }
+                    }
+                    
                     foreach (var idx in _components) {
                         if (!_componentsColumns.Contains(idx)) {
                             menu.AddItem(new GUIContent(idx.FullName), false, objType => _componentsColumns.Add((EditorEntityDataMetaByWorld) objType), idx);
@@ -223,11 +284,17 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     for (var i = 0; i < _components.Count; i++) {
                         _components[i].ShowTableData = true;
                     }
+                    for (var i = 0; i < _standardComponents.Count; i++) {
+                        _standardComponents[i].ShowTableData = true;
+                    }
                 }
 
                 if (GUILayout.Button("None", Ui.ButtonStyleWhite, Ui.WidthLine(60))) {
                     for (var i = 0; i < _components.Count; i++) {
                         _components[i].ShowTableData = false;
+                    }
+                    for (var i = 0; i < _standardComponents.Count; i++) {
+                        _standardComponents[i].ShowTableData = false;
                     }
                 }
             }
@@ -247,18 +314,23 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             var methods = _ecsWithFilter._methods;
             methods.Clear();
             
-            if (_all.Count > 0) methods.Add(new TypesArray(_all).All());
-            if (_none.Count > 0) methods.Add(new TypesArray(_none).None());
-            if (_any.Count > 1) methods.Add(new TypesArray(_any).Any());
+            if (_all.Count > 0) methods.Add(new AllTypes<TypesArray>(new TypesArray(_all)));
+            if (_allOnlyDisabled.Count > 0) methods.Add(new AllOnlyDisabledTypes<TypesArray>(new TypesArray(_allOnlyDisabled)));
+            if (_allWithDisabled.Count > 0) methods.Add(new AllWithDisabledTypes<TypesArray>(new TypesArray(_allWithDisabled)));
+            if (_none.Count > 0) methods.Add(new NoneTypes<TypesArray>(new TypesArray(_none)));
+            if (_noneWithDisabled.Count > 0) methods.Add(new NoneWithDisabledTypes<TypesArray>(new TypesArray(_noneWithDisabled)));
+            if (_any.Count > 1) methods.Add(new AnyTypes<TypesArray>(new TypesArray(_any)));
+            if (_anyOnlyDisabled.Count > 1) methods.Add(new AnyOnlyDisabledTypes<TypesArray>(new TypesArray(_anyOnlyDisabled)));
+            if (_anyWithDisabled.Count > 1) methods.Add(new AnyWithDisabledTypes<TypesArray>(new TypesArray(_anyWithDisabled)));
             #if !FFS_ECS_DISABLE_TAGS
-            if (_tagAll.Count > 0) methods.Add(new TagArray(_tagAll).All());
-            if (_tagNone.Count > 0) methods.Add(new TagArray(_tagNone).None());
-            if (_tagAny.Count > 1) methods.Add(new TagArray(_tagAny).Any());
+            if (_tagAll.Count > 0) methods.Add(new TagAllTypes<TagArray>(new TagArray(_tagAll)));
+            if (_tagNone.Count > 0) methods.Add(new TagNoneTypes<TagArray>(new TagArray(_tagNone)));
+            if (_tagAny.Count > 1) methods.Add(new TagAnyTypes<TagArray>(new TagArray(_tagAny)));
             #endif
             #if !FFS_ECS_DISABLE_MASKS
-            if (_maskAll.Count > 0) methods.Add(new MaskArray(_maskAll).All());
-            if (_maskNone.Count > 0) methods.Add(new MaskArray(_maskNone).None());
-            if (_maskAny.Count > 1) methods.Add(new MaskArray(_maskAny).Any());
+            if (_maskAll.Count > 0) methods.Add(new MaskAllTypes<MaskArray>(new MaskArray(_maskAll)));
+            if (_maskNone.Count > 0) methods.Add(new MaskNoneTypes<MaskArray>(new MaskArray(_maskNone)));
+            if (_maskAny.Count > 1) methods.Add(new MaskAnyTypes<MaskArray>(new MaskArray(_maskAny)));
             #endif
 
             return _ecsWithFilter;
@@ -304,27 +376,24 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         }
 
         [MethodImpl(AggressiveInlining)]
-        public void SetData<WorldType>(ref int minCount, ref int[] entities) where WorldType : struct, IWorldType {
+        public void SetMinData<WorldType>(ref uint minCount, ref uint[] entities) where WorldType : struct, IWorldType {
             foreach (var type in Types) {
-                Ecs<WorldType>.ModuleComponents.Value.GetPool(type.Type).SetDataIfCountLess(ref minCount, ref entities);
+                World<WorldType>.ModuleComponents.Value.GetPool(type.Type).SetDataIfCountLess(ref minCount, ref entities);
             }
         }
 
         [MethodImpl(AggressiveInlining)]
         public void SetBitMask<WorldType>(byte bufId) where WorldType : struct, IWorldType {
             foreach (var type in Types) {
-                Ecs<WorldType>.ModuleComponents.Value.BitMask.SetInBuffer(bufId, Ecs<WorldType>.ModuleComponents.Value.GetPool(type.Type).DynamicId().Value);
-                #if DEBUG || FFS_ECS_ENABLE_DEBUG
-                Ecs<WorldType>.ModuleComponents.Value.GetPool(type.Type).AddBlocker(1);
-                #endif
+                World<WorldType>.ModuleComponents.Value.BitMask.SetInBuffer(bufId, World<WorldType>.ModuleComponents.Value.GetPool(type.Type).DynamicId());
             }
         }
 
         #if DEBUG || FFS_ECS_ENABLE_DEBUG
         [MethodImpl(AggressiveInlining)]
-        public void Dispose<WorldType>() where WorldType : struct, IWorldType {
+        public void Block<WorldType>(int val) where WorldType : struct, IWorldType {
             foreach (var type in Types) {
-                Ecs<WorldType>.ModuleComponents.Value.GetPool(type.Type).AddBlocker(-1);
+                World<WorldType>.ModuleComponents.Value.GetPool(type.Type).AddBlocker(val);
             }
         }
         #endif
@@ -340,9 +409,9 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         }
 
         [MethodImpl(AggressiveInlining)]
-        public void SetMask<WorldType>(byte bufId) where WorldType : struct, IWorldType {
+        public void SetBitMask<WorldType>(byte bufId) where WorldType : struct, IWorldType {
             for (var i = 0; i < Mask.Count; i++) {
-                Ecs<WorldType>.ModuleMasks.Value.BitMask.SetInBuffer(bufId, Ecs<WorldType>.ModuleMasks.Value.GetPool(Mask[i].Type).DynamicId().Value);
+                World<WorldType>.ModuleMasks.Value.BitMask.SetInBuffer(bufId, World<WorldType>.ModuleMasks.Value.GetPool(Mask[i].Type).DynamicId());
             }
         }
     }
@@ -362,27 +431,24 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         }
 
         [MethodImpl(AggressiveInlining)]
-        public void SetData<WorldType>(ref int minCount, ref int[] entities) where WorldType : struct, IWorldType {
+        public void SetMinData<WorldType>(ref uint minCount, ref uint[] entities) where WorldType : struct, IWorldType {
             foreach (var type in Tags) {
-                Ecs<WorldType>.ModuleTags.Value.GetPool(type.Type).SetDataIfCountLess(ref minCount, ref entities);
+                World<WorldType>.ModuleTags.Value.GetPool(type.Type).SetDataIfCountLess(ref minCount, ref entities);
             }
         }
 
         [MethodImpl(AggressiveInlining)]
-        public void SetMask<WorldType>(byte bufId) where WorldType : struct, IWorldType {
+        public void SetBitMask<WorldType>(byte bufId) where WorldType : struct, IWorldType {
             foreach (var type in Tags) {
-                Ecs<WorldType>.ModuleTags.Value.BitMask.SetInBuffer(bufId, Ecs<WorldType>.ModuleTags.Value.GetPool(type.Type).DynamicId().Value);
-                #if DEBUG || FFS_ECS_ENABLE_DEBUG
-                Ecs<WorldType>.ModuleTags.Value.GetPool(type.Type).AddBlocker(1);
-                #endif
+                World<WorldType>.ModuleTags.Value.BitMask.SetInBuffer(bufId, World<WorldType>.ModuleTags.Value.GetPool(type.Type).DynamicId());
             }
         }
 
         #if DEBUG || FFS_ECS_ENABLE_DEBUG
         [MethodImpl(AggressiveInlining)]
-        public void Dispose<WorldType>() where WorldType : struct, IWorldType {
+        public void Block<WorldType>(int val) where WorldType : struct, IWorldType {
             foreach (var type in Tags) {
-                Ecs<WorldType>.ModuleTags.Value.GetPool(type.Type).AddBlocker(-1);
+                World<WorldType>.ModuleTags.Value.GetPool(type.Type).AddBlocker(val);
             }
         }
         #endif
@@ -397,14 +463,14 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         }
 
         [MethodImpl(AggressiveInlining)]
-        public void SetData<WorldType>(ref int minComponentsCount, ref int[] minEntities) where WorldType : struct, IWorldType {
+        public void SetData<WorldType>(ref uint minComponentsCount, ref uint[] minEntities) where WorldType : struct, IWorldType {
             foreach (var method in _methods) {
                 method.SetData<WorldType>(ref minComponentsCount, ref minEntities);
             }
         }
 
         [MethodImpl(AggressiveInlining)]
-        public bool CheckEntity(int entityId) {
+        public bool CheckEntity(uint entityId) {
             foreach (var method in _methods) {
                 if (!method.CheckEntity(entityId)) {
                     return false;

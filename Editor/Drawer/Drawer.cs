@@ -10,6 +10,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
     public static class Drawer {
         private const int MaxFieldToStringLength = 128;
 
+        private static readonly List<IStandardComponent> _standardComponentsCache = new();
         private static readonly List<IComponent> _componentsCache = new();
         #if !FFS_ECS_DISABLE_TAGS
         private static readonly List<ITag> _tagsCache = new();
@@ -80,7 +81,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                                 provider.EventCache = null;
                             });
                             menu.AddItem(new GUIContent("Send as new event"), false, () => {
-                                var actualEvent = provider.GetActualEvent(out var cached);
+                                var actualEvent = provider.GetActualEvent(out var _);
                                 if (provider.World.Events().TryGetPool(actualEvent.GetType(), out var pool)) {
                                     pool.AddRaw(actualEvent);
                                     provider.EventCache = actualEvent;
@@ -179,8 +180,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         }
         #endif
 
-        public static void DrawEntity(StaticEcsEntityProvider provider, bool viewer, Action<StaticEcsEntityProvider> onClickBuild)
-        {
+        public static void DrawEntity(StaticEcsEntityProvider provider, bool viewer, Action<StaticEcsEntityProvider> onClickBuild, bool allowStandardComponentsAddDelete) {
             provider.Scroll = EditorGUILayout.BeginScrollView(provider.Scroll, Ui.MaxWidth600);
             EditorGUILayout.Space(10);
 
@@ -230,7 +230,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
 
                 EditorGUILayout.LabelField("Entity ID:", Ui.WidthLine(60));
                 if (provider.EntityIsActual()) {
-                    EditorGUILayout.LabelField(Ui.IntToStringD6(provider.Entity.GetId()).d6, Ui.LabelStyleWhiteBold);
+                    EditorGUILayout.LabelField(Ui.IntToStringD6((int) provider.Entity.GetId()).d6, Ui.LabelStyleWhiteBold);
                 } else {
                     EditorGUILayout.LabelField("---", Ui.LabelStyleWhiteBold);
                     if (Application.isPlaying && provider.HasComponents() && GUILayout.Button("Build", Ui.ButtonStyleYellow, Ui.WidthLine(60))) {
@@ -253,7 +253,18 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                 EditorGUILayout.HelpBox("Please, provide at least one component", MessageType.Warning, true);
             }
 
+            DrawEntity(provider, allowStandardComponentsAddDelete);
+            EditorGUILayout.EndScrollView();
+        }
+
+        public static void DrawEntity<TProvider>(TProvider provider, bool allowStandardComponentsAddDelete = true) where TProvider : Object, IStaticEcsEntityProvider {
             EditorGUILayout.Space(10);
+
+            provider.StandardComponents(_standardComponentsCache);
+            EditorGUILayout.Space(10);
+            DrawStandardComponents(_standardComponentsCache, provider, Ui.MaxWidth600, allowStandardComponentsAddDelete);
+            _standardComponentsCache.Clear();
+
             provider.Components(_componentsCache);
             EditorGUILayout.Space(10);
             DrawComponents(_componentsCache, provider, Ui.MaxWidth600);
@@ -296,9 +307,113 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             menu.ShowAsContext();
         }
 
-        private static void DrawComponents<TProvider>(List<IComponent> components, TProvider provider, GUILayoutOption[] maxWidth)
-            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
-        {
+        private static void DrawStandardComponents<TProvider>(List<IStandardComponent> components, TProvider provider, GUILayoutOption[] maxWidth, bool allowAddDelete) where TProvider : Object, IStaticEcsEntityProvider {
+            EditorGUILayout.BeginHorizontal();
+            {
+                var hasAll = MetaData.StandardComponents.Count == components.Count;
+                GUI.enabled = allowAddDelete;
+                if (GUILayout.Button("+", hasAll ? Ui.ButtonStyleGrey : Ui.ButtonStyleWhite, Ui.WidthLine(20)) && !hasAll) {
+                    DrawStandardComponentsMenu(components, provider);
+                }
+                GUI.enabled = true;
+
+                EditorGUILayout.LabelField("Standard components:", Ui.HeaderStyleWhite, Ui.WidthLine(200));
+            }
+            EditorGUILayout.EndHorizontal();
+
+            var versionIndex = components.FindIndex(component => component is EntityVersion);
+            if (versionIndex >= 0) {
+                DrawStandardComponent(components[versionIndex], provider, maxWidth, true, allowAddDelete);
+            }
+
+            for (int i = 0, iMax = components.Count; i < iMax; i++) {
+                if (i == versionIndex) continue;
+                DrawStandardComponent(components[i], provider, maxWidth, false, allowAddDelete);
+            }
+        }
+
+        private static void DrawStandardComponent<TProvider>(IStandardComponent component, TProvider provider, GUILayoutOption[] maxWidth, bool readOnly, bool allowAddDelete) where TProvider : Object, IStaticEcsEntityProvider {
+            if (component == null) {
+                EditorGUILayout.LabelField("Broken standard component - is null", EditorStyles.boldLabel);
+                if (GUILayout.Button("Delete all broken standard components", Ui.ButtonStyleWhite, Ui.WidthLine(240))) {
+                    provider.DeleteAllBrokenStandardComponents();
+                    EditorUtility.SetDirty(provider);
+                }
+                EditorGUILayout.Space(2);
+                return;
+            }
+            
+            var type = component.GetType();
+            var typeName = type.EditorTypeName();
+
+            GUI.enabled = !readOnly;
+            GUILayout.BeginHorizontal(GUI.skin.box, maxWidth);
+            {
+                GUILayout.BeginVertical(GUI.skin.box);
+                {
+                    if (TryDrawValueByCustomDrawer(typeName, type, component, out var changed, out var newValue)) {
+                        if (changed) {
+                            provider.OnChangeStandardComponent((IStandardComponent) newValue, type);
+                            EditorUtility.SetDirty(provider);
+                        }
+                    } else {
+                        EditorGUILayout.LabelField(typeName, EditorStyles.boldLabel);
+                        EditorGUI.indentLevel++;
+                        foreach (var field in MetaData.GetCachedType(type)) {
+                            if (TryDrawField(component, field, out newValue)) {
+                                field.SetValue(component, newValue);
+                                provider.OnChangeStandardComponent(component, type);
+                                EditorUtility.SetDirty(provider);
+                            }
+                        }
+
+                        EditorGUI.indentLevel--;
+                    }
+                }
+                GUILayout.EndVertical();
+                
+                GUI.enabled = allowAddDelete;
+                if (GUILayout.Button(Ui.IconTrash, Ui.WidthLine(30))) {
+                    provider.OnDeleteStandardComponent(type);
+                    EditorUtility.SetDirty(provider);
+                }
+                GUI.enabled = !readOnly;
+            }
+            GUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
+            GUI.enabled = true;
+        }
+        
+        private static void DrawStandardComponentsMenu<TProvider>(List<IStandardComponent> actualComponents, TProvider provider) where TProvider : Object, IStaticEcsEntityProvider {
+            var menu = new GenericMenu();
+            foreach (var component in MetaData.StandardComponents) {
+                var has = false;
+                foreach (var actual in actualComponents) {
+                    if (actual.GetType() == component.Type) {
+                        has = true;
+                        break;
+                    }
+                }
+
+
+                if (has) continue;
+
+                if (provider.ShouldShowStandardComponent(component.Type, Application.isPlaying)) {
+                    menu.AddItem(new GUIContent(component.FullName), false, objType => {
+                                     var objRaw = Activator.CreateInstance((Type) objType, true);
+                                     provider.OnSelectStandardComponent((IStandardComponent) objRaw);
+                                     EditorUtility.SetDirty(provider);
+                                 },
+                                 component.Type);
+                } else {
+                    menu.AddDisabledItem(new GUIContent(component.FullName));
+                }
+            }
+
+            menu.ShowAsContext();
+        }
+
+        private static void DrawComponents<TProvider>(List<IComponent> components, TProvider provider, GUILayoutOption[] maxWidth) where TProvider : Object, IStaticEcsEntityProvider {
             EditorGUILayout.BeginHorizontal();
             {
                 var hasAll = MetaData.Components.Count == components.Count;
@@ -306,14 +421,29 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     DrawComponentsMenu(components, provider);
                 }
 
-                EditorGUILayout.LabelField("Components:", Ui.HeaderStyleWhite, Ui.WidthLine(120));
+                EditorGUILayout.LabelField("Components:", Ui.HeaderStyleWhite, Ui.WidthLine(200));
             }
             EditorGUILayout.EndHorizontal();
 
             for (int i = 0, iMax = components.Count; i < iMax; i++) {
                 var component = components[i];
-                var type = component?.GetType() ?? typeof(Unsupported);
+
+                if (component == null) {
+                    EditorGUILayout.LabelField($"Broken component - is null, index {i}", EditorStyles.boldLabel);
+                    if (GUILayout.Button("Delete all broken components", Ui.ButtonStyleWhite, Ui.WidthLine(240))) {
+                        provider.DeleteAllBrokenComponents();
+                        EditorUtility.SetDirty(provider);
+                    }
+                    EditorGUILayout.Space(2);
+                    continue;
+                }
+                
+                var type = component.GetType();
                 var typeName = type.EditorTypeName();
+                var disabled = provider.IsDisabled(type);
+                if (disabled) {
+                    typeName += " [Disabled]";
+                }
 
                 GUILayout.BeginHorizontal(GUI.skin.box, maxWidth);
                 {
@@ -339,20 +469,36 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                         }
                     }
                     GUILayout.EndVertical();
-
+                    
+                    GUILayout.BeginVertical(Ui.Width(30));
                     if (GUILayout.Button(Ui.IconTrash, Ui.WidthLine(30))) {
                         provider.OnDeleteComponent(component?.GetType());
                         EditorUtility.SetDirty(provider);
                     }
+                    const string DataOn = "☑";
+                    const string DataOff = "☐";
+                    if (provider.EntityIsActual()) {
+                        if (disabled) {
+                            if (GUILayout.Button(DataOff, Ui.WidthLine(30))) {
+                                provider.Enable(type);
+                                EditorUtility.SetDirty(provider);
+                            }
+                        } else {
+                            if (GUILayout.Button(DataOn, Ui.WidthLine(30))) {
+                                provider.Disable(type);
+                                EditorUtility.SetDirty(provider);
+                            } 
+                        }
+                    }
+         
+                    GUILayout.EndVertical();
                 }
                 GUILayout.EndHorizontal();
                 EditorGUILayout.Space(2);
             }
         }
 
-        private static void DrawComponentsMenu<TProvider>(List<IComponent> actualComponents, TProvider provider)
-            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
-        {
+        private static void DrawComponentsMenu<TProvider>(List<IComponent> actualComponents, TProvider provider) where TProvider : Object, IStaticEcsEntityProvider {
             var menu = new GenericMenu();
             foreach (var component in MetaData.Components) {
                 var has = false;
@@ -382,9 +528,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         }
         
         #if !FFS_ECS_DISABLE_TAGS
-        private static void DrawTags<TProvider>(List<ITag> tags, TProvider provider, GUILayoutOption[] maxWidth) 
-            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
-        {
+        private static void DrawTags<TProvider>(List<ITag> tags, TProvider provider, GUILayoutOption[] maxWidth) where TProvider : Object, IStaticEcsEntityProvider {
             EditorGUILayout.BeginHorizontal();
             {
                 var hasAll = MetaData.Tags.Count == tags.Count;
@@ -392,12 +536,23 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     DrawTagsMenu(tags, provider);
                 }
 
-                EditorGUILayout.LabelField("Tags:", Ui.HeaderStyleWhite, Ui.WidthLine(120));
+                EditorGUILayout.LabelField("Tags:", Ui.HeaderStyleWhite, Ui.WidthLine(200));
             }
             EditorGUILayout.EndHorizontal();
 
             for (int i = 0, iMax = tags.Count; i < iMax; i++) {
-                var type = tags[i]?.GetType();
+                var tag = tags[i];
+                if (tag == null) {
+                    EditorGUILayout.LabelField($"Broken tag - is null, index {i}", EditorStyles.boldLabel);
+                    if (GUILayout.Button("Delete all broken tags", Ui.ButtonStyleWhite, Ui.WidthLine(240))) {
+                        provider.DeleteAllBrokenTags();
+                        EditorUtility.SetDirty(provider);
+                    }
+                    EditorGUILayout.Space(2);
+                    continue;
+                }
+                
+                var type = tag.GetType();
                 EditorGUILayout.BeginHorizontal(GUI.skin.box, maxWidth);
                 {
                     EditorGUILayout.SelectableLabel(type?.EditorTypeName() ?? "<null>", EditorStyles.boldLabel, Ui.MaxWidth600SingleLine);
@@ -411,9 +566,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             }
         }
 
-        private static void DrawTagsMenu<TProvider>(List<ITag> actualTags, TProvider provider) 
-            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
-        {
+        private static void DrawTagsMenu<TProvider>(List<ITag> actualTags, TProvider provider) where TProvider : Object, IStaticEcsEntityProvider {
             var menu = new GenericMenu();
             foreach (var tag in MetaData.Tags) {
                 var has = false;
@@ -443,9 +596,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
         #endif
 
         #if !FFS_ECS_DISABLE_MASKS
-        private static void DrawMasks<TProvider>(List<IMask> masks, TProvider provider, GUILayoutOption[] maxWidth) 
-            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
-        {
+        private static void DrawMasks<TProvider>(List<IMask> masks, TProvider provider, GUILayoutOption[] maxWidth) where TProvider : Object, IStaticEcsEntityProvider {
             EditorGUILayout.BeginHorizontal();
             {
                 var hasAll = MetaData.Masks.Count == masks.Count;
@@ -453,12 +604,22 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                     DrawMasksMenu(masks, provider);
                 }
 
-                EditorGUILayout.LabelField("Masks:", Ui.HeaderStyleWhite, Ui.WidthLine(120));
+                EditorGUILayout.LabelField("Masks:", Ui.HeaderStyleWhite, Ui.WidthLine(200));
             }
             EditorGUILayout.EndHorizontal();
 
             for (int i = 0, iMax = masks.Count; i < iMax; i++) {
-                var type = masks[i]?.GetType();
+                var mask =  masks[i];
+                if (mask == null) {
+                    EditorGUILayout.LabelField($"Broken mask - is null, index {i}", EditorStyles.boldLabel);
+                    if (GUILayout.Button("Delete all broken masks", Ui.ButtonStyleWhite, Ui.WidthLine(240))) {
+                        provider.DeleteAllBrokenMasks();
+                        EditorUtility.SetDirty(provider);
+                    }
+                    EditorGUILayout.Space(2);
+                    continue;
+                }
+                var type = mask.GetType();
                 EditorGUILayout.BeginHorizontal(GUI.skin.box, maxWidth);
                 {
                     EditorGUILayout.SelectableLabel(type?.EditorTypeName() ?? "<null>", EditorStyles.boldLabel, Ui.MaxWidth600SingleLine);
@@ -472,9 +633,7 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             }
         }
         
-        private static void DrawMasksMenu<TProvider>(List<IMask> actualMasks, TProvider provider)
-            where TProvider : UnityEngine.Object, IStaticEcsEntityProvider
-        {
+        private static void DrawMasksMenu<TProvider>(List<IMask> actualMasks, TProvider provider) where TProvider : Object, IStaticEcsEntityProvider {
             var menu = new GenericMenu();
             foreach (var mask in MetaData.Masks) {
                 var has = false;
@@ -535,12 +694,10 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
                 strVal = strVal.Substring(0, MaxFieldToStringLength);
             }
 
-            EditorGUILayout.LabelField(strVal, new GUIStyle(EditorStyles.numberField) {
-                alignment = TextAnchor.MiddleCenter
-            }, layout);
+            EditorGUILayout.LabelField(strVal, style, layout);
         }
 
-        private static bool TryDrawField(object component, FieldInfo field, out object newValue) {
+        internal static bool TryDrawField(object component, FieldInfo field, out object newValue) {
             var fieldValue = field.GetValue(component);
             var fieldType = field.FieldType;
             if (TryDrawValueByCustomDrawer(field.Name, fieldType, fieldValue, out var changed, out newValue)) {
@@ -569,9 +726,23 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             return false;
         }
 
-        private static bool TryDrawValueByCustomDrawer(string label, Type type, object value, out bool changed, out object newValue) {
+        internal static bool TryDrawValueByCustomDrawer(string label, Type type, object value, out bool changed, out object newValue) {
             if (MetaData.Inspectors.TryGetValue(type, out var inspector)) {
                 changed = inspector.DrawValue(label, value, out newValue);
+                return true;
+            }
+            
+            if (type.IsGenericType && MetaData.InspectorsGeneric.TryGetValue(type.GetGenericTypeDefinition(), out var inspectorType)) {
+                var ins = (IStaticEcsValueDrawer) Activator.CreateInstance(inspectorType.MakeGenericType(type.GetGenericArguments()));
+                MetaData.Inspectors[type] = ins;
+                changed = ins.DrawValue(label, value, out newValue);
+                return true;
+            }
+            
+            if (type.IsArray && MetaData.InspectorsGeneric.TryGetValue(type.BaseType, out var inspectorTypeArray)) {
+                var ins = (IStaticEcsValueDrawer) Activator.CreateInstance(inspectorTypeArray.MakeGenericType(type.GetElementType()));
+                MetaData.Inspectors[type] = ins;
+                changed = ins.DrawValue(label, value, out newValue);
                 return true;
             }
 
@@ -580,9 +751,16 @@ namespace FFS.Libraries.StaticEcs.Unity.Editor {
             return false;
         }
 
-        private static bool TryDrawTableValueByCustomDrawer(Type type, object value, GUIStyle style, GUILayoutOption[] layoutOptions) {
+        internal static bool TryDrawTableValueByCustomDrawer(Type type, object value, GUIStyle style, GUILayoutOption[] layoutOptions) {
             if (MetaData.Inspectors.TryGetValue(type, out var inspector)) {
                 inspector.DrawTableValue(value, style, layoutOptions);
+                return true;
+            }
+            
+            if (type.IsGenericType && MetaData.InspectorsGeneric.TryGetValue(type.GetGenericTypeDefinition(), out var inspectorType)) {
+                var ins = (IStaticEcsValueDrawer) Activator.CreateInstance(inspectorType.MakeGenericType(type.GetGenericArguments()));
+                MetaData.Inspectors[type] = ins;
+                ins.DrawTableValue(value, style, layoutOptions);
                 return true;
             }
 
